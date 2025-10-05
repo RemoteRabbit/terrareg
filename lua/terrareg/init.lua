@@ -1,7 +1,7 @@
 --- terrareg.nvim - A Neovim plugin for [brief description]
 -- @module terrareg
 -- @author remoterabbit
--- @license MIT
+-- @license GPL-3
 
 local M = {}
 
