@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>$(ldoc.title)</title>
+    <link rel="stylesheet" href="ldoc.css" type="text/css" />
+    <style>
+        /* Enhanced styling for terrareg docs */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #fff;
+        }
+
+        .navigation {
+            background: #f8f9fa;
+            border-right: 1px solid #e9ecef;
+            padding: 1rem;
+        }
+
+        .navigation h1 {
+            color: #495057;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .function_list {
+            background: #fff;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .function_list h2 {
+            color: #6f42c1;
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        pre {
+            background: #f6f8fa;
+            border: 1px solid #d0d7de;
+            border-radius: 6px;
+            padding: 1rem;
+            overflow-x: auto;
+        }
+
+        code {
+            background: #f6f8fa;
+            padding: 0.2rem 0.4rem;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .function {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1.5rem 0;
+        }
+
+        .function:last-child {
+            border-bottom: none;
+        }
+
+        .function_name {
+            color: #0969da;
+            font-weight: 600;
+            font-size: 1.2rem;
+        }
+
+        .summary {
+            color: #656d76;
+            margin: 0.5rem 0;
+        }
+
+        .params, .returns {
+            margin: 1rem 0;
+        }
+
+        .params h3, .returns h3 {
+            color: #24292f;
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .param {
+            margin: 0.5rem 0;
+            padding-left: 1rem;
+        }
+
+        .param_name {
+            font-weight: 600;
+            color: #8250df;
+        }
+
+        .usage {
+            background: #fff8e1;
+            border: 1px solid #ffc107;
+            border-radius: 6px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+
+        .usage h3 {
+            color: #f57c00;
+            margin-bottom: 0.5rem;
+        }
+
+        /* Navigation enhancements */
+        .nav-link {
+            display: block;
+            padding: 0.3rem 0;
+            color: #495057;
+            text-decoration: none;
+            border-radius: 3px;
+            margin: 0.2rem 0;
+        }
+
+        .nav-link:hover {
+            background: #e9ecef;
+            padding-left: 0.5rem;
+        }
+
+        .nav-link.current {
+            background: #007bff;
+            color: white;
+            font-weight: 600;
+        }
+
+        /* Type annotations styling */
+        .type {
+            color: #6f42c1;
+            font-style: italic;
+            font-size: 0.9em;
+        }
+
+        /* Table styling */
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1rem 0;
+        }
+
+        th, td {
+            border: 1px solid #dee2e6;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+        }
+
+        /* Search styling */
+        .search-box {
+            width: 100%;
+            padding: 0.5rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .container {
+                flex-direction: column;
+            }
+
+            .navigation {
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="navigation">
+        <h1>$(ldoc.title)</h1>
+
+        # if ldoc.body then
+        <div class="summary">$(ldoc.body)</div>
+        # end
+
+        # if not ldoc.single then
+        <input type="text" class="search-box" placeholder="Search functions..." id="search">
+
+        <div class="function_list">
+            <h2>Modules</h2>
+            # for kind, items in ldoc.kinds() do
+                # if kind == "Modules" then
+                    # for item in items() do
+                        <a href="$(ldoc.ref_to_module(item))" class="nav-link">$(item.name)</a>
+                    # end
+                # end
+            # end
+        </div>
+
+        <div class="function_list">
+            <h2>Functions</h2>
+            # for kind, items in ldoc.kinds() do
+                # if kind == "Functions" then
+                    # for item in items() do
+                        <a href="#$(item.name)" class="nav-link">$(item.name)</a>
+                    # end
+                # end
+            # end
+        </div>
+        # end
+    </div>
+
+    <div class="content">
+        # if ldoc.body then
+        <h1>$(ldoc.title)</h1>
+        <div class="module_description">$(ldoc.body)</div>
+        # end
+
+        # for kind, items in ldoc.kinds() do
+            # if kind == "Functions" then
+                <h2>Functions</h2>
+                # for item in items() do
+                <div class="function" id="$(item.name)">
+                    <div class="function_name">$(item.name)</div>
+
+                    # if item.summary then
+                    <div class="summary">$(item.summary)</div>
+                    # end
+
+                    # if item.description then
+                    <div class="description">$(item.description)</div>
+                    # end
+
+                    # if item.params then
+                    <div class="params">
+                        <h3>Parameters:</h3>
+                        # for param in item.params() do
+                        <div class="param">
+                            <span class="param_name">$(param)</span>
+                            # if item.params[param] then
+                            <span class="type">($(item.params[param]))</span>
+                            # end
+                        </div>
+                        # end
+                    </div>
+                    # end
+
+                    # if item.retgroups then
+                    <div class="returns">
+                        <h3>Returns:</h3>
+                        # for group in item.retgroups do
+                            # for ret in group do
+                            <div class="return">
+                                <span class="type">$(ret.type or "any")</span>: $(ret.text)
+                            </div>
+                            # end
+                        # end
+                    </div>
+                    # end
+
+                    # if item.usage then
+                    <div class="usage">
+                        <h3>Usage:</h3>
+                        # for usage in item.usage do
+                        <pre><code>$(usage)</code></pre>
+                        # end
+                    </div>
+                    # end
+                </div>
+                # end
+            # end
+        # end
+    </div>
+</div>
+
+<script>
+// Search functionality
+document.getElementById('search').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase();
+    const functions = document.querySelectorAll('.function');
+    const navLinks = document.querySelectorAll('.nav-link');
+
+    functions.forEach(func => {
+        const name = func.querySelector('.function_name').textContent.toLowerCase();
+        const summary = func.querySelector('.summary')?.textContent.toLowerCase() || '';
+
+        if (name.includes(searchTerm) || summary.includes(searchTerm)) {
+            func.style.display = 'block';
+        } else {
+            func.style.display = 'none';
+        }
+    });
+
+    navLinks.forEach(link => {
+        const text = link.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+            link.style.display = 'block';
+        } else {
+            link.style.display = 'none';
+        }
+    });
+});
+
+// Smooth scrolling for navigation links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+</script>
+
+</body>
+</html>

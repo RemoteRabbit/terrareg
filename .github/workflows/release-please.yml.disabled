@@ -17,7 +17,7 @@ jobs:
         with:
           release-type: simple
           package-name: terrareg
-          
+
   # Auto-merge beta branch into main after successful release
   merge-beta:
     needs: release-please
@@ -27,7 +27,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Merge beta into main
         run: |
           git config user.name "github-actions[bot]"

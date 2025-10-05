@@ -9,9 +9,13 @@ luac.out
 *~
 .netrwhist
 .elixir-tools
+*.dump
 
 # Pre-commit
 .pre-commit-cache/
+
+# Generated documentation
+docs/generated/
 
 # OS generated files
 .DS_Store

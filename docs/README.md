@@ -34,7 +34,7 @@ When adding new functions or modules, please include proper documentation commen
 --- Brief description of the function
 -- Longer description if needed
 -- @tparam string param1 Description of parameter
--- @tparam number param2 Description of parameter  
+-- @tparam number param2 Description of parameter
 -- @treturn boolean Description of return value
 -- @usage require('terrareg').function_name("example")
 function M.function_name(param1, param2)

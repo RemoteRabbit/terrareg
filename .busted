@@ -1,0 +1,14 @@
+return {
+  default = {
+    verbose = true,
+    output = "utfTerminal",
+    coverage = false,
+    ROOT = {"."},
+    pattern = ".*_spec%.lua$",
+    exclude = {
+      "deps",
+      "lua_modules"
+    },
+    lua = "luajit"
+  }
+}
