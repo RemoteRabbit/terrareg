@@ -179,6 +179,28 @@ require("terrareg").setup({
 })
 ```
 
+## Full Configuration Schema
+
+```lua
+---@class TerraregConfig
+---@field display_mode string How documentation is displayed ("float", "popup", "split")
+---@field window table Window options (width, height, border)
+---@field timeout number HTTP request timeout (ms)
+---@field debug boolean Debug mode toggle
+---@field statusline table|nil Statusline integration options
+local config = {
+  display_mode = "float",
+  window = {
+    width = 150,
+    height = 50,
+    border = "rounded",
+  },
+  timeout = 30000,
+  debug = false,
+  statusline = nil,
+}
+```
+
 ### Production Setup
 ```lua
 require("terrareg").setup({

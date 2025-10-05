@@ -220,3 +220,65 @@ require("terrareg").setup({
 ::: tip API Stability
 The core API (`setup` and `get_config`) is stable and follows semantic versioning. Breaking changes will only occur in major version releases.
 :::
+
+## Resource Browsing & Documentation API
+
+### `aws_resources(opts?)`
+Opens a picker for all AWS resources and data sources.
+
+**Parameters:**
+- `opts` (`table?`) - Picker options (optional)
+
+### `aws_resources_only(opts?)`
+Opens a picker for AWS resources only.
+
+### `aws_data_sources(opts?)`
+Opens a picker for AWS data sources only.
+
+### `search(query, opts?)`
+Searches AWS resources and data sources by query string.
+
+**Parameters:**
+- `query` (`string`) - Search term
+- `opts` (`table?`) - Picker options (optional)
+
+### `show_docs(resource_type, resource_name)`
+Shows documentation for a specific resource or data source.
+
+**Parameters:**
+- `resource_type` (`string`) - "resource" or "data"
+- `resource_name` (`string`) - Resource name (e.g., `aws_s3_bucket`)
+
+### `get_docs(resource_type, resource_name, callback)`
+Fetches documentation data for a resource and passes it to a callback.
+
+**Parameters:**
+- `resource_type` (`string`)
+- `resource_name` (`string`)
+- `callback` (`function`) - Receives documentation data
+
+### `insert_example(resource_type, resource_name)`
+Inserts example code for a resource at the cursor position.
+
+**Parameters:**
+- `resource_type` (`string`)
+- `resource_name` (`string`)
+
+## Provider Extension API
+
+To add support for a new provider, implement a Lua module in `lua/terrareg/providers/` with the following functions:
+
+- `list_resources()` - Returns a list of supported resources
+- `get_docs(resource_type, resource_name)` - Returns documentation for a resource
+- `get_examples(resource_type, resource_name)` - Returns example code
+
+See [docs/guide/advanced.md](../guide/advanced.md) for details and templates.
+
+## Error Handling & Validation
+
+All resource and provider functions validate input and raise errors for invalid types or missing data. Wrap API calls in `pcall` for safe error handling.
+
+## See Also
+
+- [Configuration Guide](../guide/configuration.md)
+- [Advanced Provider Guide](../guide/advanced.md)

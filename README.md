@@ -1,15 +1,27 @@
 # terrareg.nvim
 
-A Neovim plugin for browsing and inserting Terraform AWS provider documentation with Telescope integration.
+An extensible Neovim plugin for browsing and inserting Terraform provider documentation (AWS, Azure, GCP, and more) with Telescope integration.
 
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [API](#api)
+- [Supported Resources](#supported-resources)
+- [Extending & Contributing](#extending--contributing)
+- [Getting Help](#getting-help)
+- [License](#license)
 ## Features
 
-- 🔍 **Telescope Integration**: Browse AWS resources and data sources with fuzzy search
+- 🔍 **Telescope Integration**: Browse Terraform resources and data sources with fuzzy search
 - 📖 **Rich Documentation Display**: View formatted documentation in floating windows
 - 💡 **Example Code Insertion**: Insert Terraform examples directly into your buffer
-- 🚀 **Fast Access**: Quickly find and reference AWS resources while coding
-- 📊 **Comprehensive Coverage**: Includes common AWS resources and data sources
+- 🚀 **Fast Access**: Quickly find and reference resources while coding
+- 📊 **Comprehensive Coverage**: Includes common AWS, Azure, GCP, and other resources
 - 🌐 **Multiple Sources**: Fetches from Terraform Registry with GitHub fallback
+- 🧩 **Extensible Providers**: Easily add support for new cloud providers
 
 ## Installation
 
@@ -17,6 +29,7 @@ A Neovim plugin for browsing and inserting Terraform AWS provider documentation 
 
 - [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
 - `curl` (for HTTP requests)
+- Neovim 0.8+
 
 ### Stable Release
 
@@ -94,7 +107,7 @@ use {
 
 ## Configuration
 
-The plugin comes with the following default configuration:
+The plugin comes with the following default configuration (see [docs/guide/configuration.md](docs/guide/configuration.md) for all options):
 
 ```lua
 require("terrareg").setup({
@@ -118,7 +131,7 @@ require("terrareg").setup({
 
 ## Usage
 
-### Commands
+### Commands ([Full usage guide](docs/guide/quick-start.md))
 
 | Command | Description |
 |---------|-------------|
@@ -147,18 +160,16 @@ After installation, you can also use the Telescope extension:
 ### Examples
 
 ```lua
--- Open AWS resources picker
 require('terrareg').aws_resources()
 
--- Search for S3 resources
 require('terrareg').search('s3')
 
--- Show documentation for aws_s3_bucket
 require('terrareg').show_docs('resource', 'aws_s3_bucket')
 
--- Insert example code for aws_instance
 require('terrareg').insert_example('resource', 'aws_instance')
 ```
+
+See [API documentation](docs/api/index.md) for all available functions.
 
 ## API
 
@@ -199,7 +210,7 @@ terrareg.insert_example(resource_type, resource_name)
 
 ## Supported Resources
 
-The plugin includes documentation for common AWS resources including:
+The plugin includes documentation for common AWS, Azure, GCP, and other resources including:
 
 - **Compute**: EC2 instances, Auto Scaling Groups, Launch Templates
 - **Storage**: S3 buckets, EBS volumes
@@ -238,11 +249,28 @@ Legend: * Req = Required, Opt = Optional, (!) = Forces new resource
 
 ## Contributing
 
+
+### Extending Providers
+
+To add support for a new cloud provider:
+1. Create a new Lua module in `lua/terrareg/providers/` (see [docs/guide/advanced.md](docs/guide/advanced.md)).
+2. Implement required functions (`list_resources`, `get_docs`, etc.).
+3. Add tests in `tests/test_providers.lua`.
+4. Update documentation in `docs/api/index.md` and `docs/guide/advanced.md`.
+5. Submit a pull request.
+
+### Contributor Guide
 1. Install [pre-commit](https://pre-commit.com/)
 2. Run `pre-commit install` to set up the git hook scripts
 3. Make your changes
 4. Submit a pull request
 
+## Getting Help
+
+- [FAQ](docs/guide/faq.md)
+- [Configuration Guide](docs/guide/configuration.md)
+- [API Reference](docs/api/index.md)
+- [Open an Issue](https://github.com/RemoteRabbit/terrareg/issues)
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.

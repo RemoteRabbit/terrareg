@@ -46,6 +46,24 @@ require("terrareg").setup(config)
 
 ## Performance Optimization
 
+
+### Cache Tuning
+
+terrareg uses a smart cache for documentation and resource data. You can tune cache settings for performance:
+
+```lua
+require("terrareg.cache").setup({
+  ttl = 7200,         -- Time to live in seconds (default: 3600)
+  max_entries = 2000, -- Maximum cache entries (default: 1000)
+})
+```
+
+**Tips:**
+- Use a higher `max_entries` for large projects or frequent lookups.
+- Lower `ttl` for more up-to-date data, higher for speed.
+- Use `require("terrareg.cache").get_stats()` to monitor cache hit rates.
+- Call `require("terrareg.cache").preload_popular()` to warm up cache for common resources.
+
 ### Lazy Loading
 
 Optimize startup time by configuring lazy loading:
@@ -235,24 +253,23 @@ require("terrareg").setup({
 
 ## Security Considerations
 
-### Sensitive Data Handling
 
-Protect sensitive information:
+### Best Practices for Credentials
 
+- **Never put secrets or tokens in URLs or configuration files.**
+- Use environment variables for all credentials and sensitive data.
+- Mask sensitive patterns (e.g., `password`, `token`, `key`, `secret`) in logs and error messages.
+- Use OS-level secret management (e.g., `pass`, `gopass`, `aws-vault`) for cloud credentials.
+- Always review error messages before sharing logs to ensure no secrets are exposed.
+- Prefer encrypted storage for any persistent secrets.
+
+Example:
 ```lua
-require("terrareg").setup({
-  security = {
-    mask_sensitive = true,
-    sensitive_patterns = {
-      "password", "token", "key", "secret"
-    },
-    encryption = {
-      enabled = true,
-      algorithm = "AES-256"
-    }
-  }
-})
+-- Use environment variable for API token
+local api_token = vim.env.TERRAREG_API_TOKEN
 ```
+
+**Tip:** If you contribute code, always audit for accidental credential exposure before submitting PRs.
 
 ### Access Control
 
@@ -318,3 +335,69 @@ See the [CHANGELOG](https://github.com/RemoteRabbit/terrareg/blob/main/CHANGELOG
 ## Contributing
 
 Want to add advanced features? Check out our [Contributing Guide](https://github.com/RemoteRabbit/terrareg/blob/main/CONTRIBUTING.md).
+
+## Adding a New Provider
+
+You can extend terrareg to support new Terraform providers (e.g., Azure, GCP, custom) by following these steps:
+
+### 1. Create a Provider Module
+
+Create a new file in `lua/terrareg/providers/` (e.g., `azure.lua`).
+
+Implement the following required functions:
+
+```lua
+local M = {}
+
+-- Return a list of supported resources
+function M.get_resources()
+  return {
+    {
+      name = "azure_storage_account",
+      type = "resource",
+      category = "Storage",
+      description = "Manages an Azure Storage Account.",
+      provider = "azure",
+    },
+    -- ... more resources ...
+  }
+end
+
+-- Search resources by query
+function M.search_resources(query)
+  -- Implement fuzzy search logic
+end
+
+-- Fetch documentation for a resource
+function M.fetch_documentation(resource_type, resource_name, opts, callback)
+  -- Fetch and return documentation data
+end
+
+return M
+```
+
+### 2. Register the Provider
+
+In `lua/terrareg/providers/init.lua`, register your provider:
+
+```lua
+local providers = {}
+providers.azure = require("terrareg.providers.azure")
+-- ... other providers ...
+return providers
+```
+
+### 3. Add Tests
+
+Add tests in `tests/test_providers.lua` to validate your provider's functions and resource data.
+
+### 4. Update Documentation
+
+- Add your provider to the API docs and guides.
+- Document any special configuration or usage.
+
+### 5. Submit a Pull Request
+
+Follow the [Contributing Guide](https://github.com/RemoteRabbit/terrareg/blob/main/CONTRIBUTING.md) and open a PR.
+
+**Tip:** See existing provider modules (e.g., `aws.lua`, `kubernetes.lua`) for reference implementations.
