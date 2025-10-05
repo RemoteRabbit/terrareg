@@ -8,6 +8,7 @@ luac.out
 *.swo
 *~
 .netrwhist
+.elixir-tools
 
 # Pre-commit
 .pre-commit-cache/
