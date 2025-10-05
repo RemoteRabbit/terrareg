@@ -72,9 +72,10 @@ jobs:
           luarocks install busted
 
       - name: Setup Neovim ${{ matrix.neovim-version }}
-        uses: rhymond/setup-neovim@v1
+        uses: rhysd/action-setup-vim@v1
         with:
-          neovim-version: ${{ matrix.neovim-version }}
+          neovim: true
+          version: ${{ matrix.neovim-version }}
 
       - name: Install plenary.nvim
         run: |
@@ -154,9 +155,10 @@ jobs:
           luarocks install busted
 
       - name: Setup Neovim
-        uses: rhymond/setup-neovim@v1
+        uses: rhysd/action-setup-vim@v1
         with:
-          neovim-version: ${{ matrix.neovim-version }}
+          neovim: true
+          version: ${{ matrix.neovim-version }}
 
       - name: Run basic tests on ${{ matrix.os }}
         shell: bash
@@ -174,9 +176,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Neovim
-        uses: rhymond/setup-neovim@v1
+        uses: rhysd/action-setup-vim@v1
         with:
-          neovim-version: stable
+          neovim: true
+          version: stable
 
       - name: Test plugin loading
         run: |
@@ -210,9 +213,10 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Setup Neovim
-        uses: rhymond/setup-neovim@v1
+        uses: rhysd/action-setup-vim@v1
         with:
-          neovim-version: stable
+          neovim: true
+          version: stable
 
       - name: Test startup performance
         run: |
