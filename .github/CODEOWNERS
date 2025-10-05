@@ -1,0 +1,21 @@
+# Global ownership
+* @remoterabbit
+
+# Lua source code
+/lua/ @remoterabbit
+
+# Plugin files
+/plugin/ @remoterabbit
+
+# GitHub workflows and templates
+/.github/ @remoterabbit
+
+# Documentation
+/README.md @remoterabbit
+/CONTRIBUTING.md @remoterabbit
+/SECURITY.md @remoterabbit
+
+# Configuration files
+/.pre-commit-config.yaml @remoterabbit
+/.luacheckrc @remoterabbit
+/stylua.toml @remoterabbit

@@ -1,0 +1,26 @@
+# Lua
+*.luac
+luac.out
+
+# Vim/Neovim
+*.tmp
+*.swp
+*.swo
+*~
+.netrwhist
+
+# Pre-commit
+.pre-commit-cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
