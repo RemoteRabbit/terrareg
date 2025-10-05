@@ -5,7 +5,7 @@ Thank you for your interest in contributing to terrareg! We welcome contribution
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/YOUR_USERNAME/terrareg.git`
+2. Clone your fork: `git clone https://github.com/RemoteRabbit/terrareg.git`
 3. Create a new branch: `git checkout -b feature/your-feature-name`
 
 ## Development Setup
@@ -19,6 +19,7 @@ Thank you for your interest in contributing to terrareg! We welcome contribution
 ### Setup
 
 1. Install pre-commit:
+
    ```bash
    pip install pre-commit
    pre-commit install
@@ -52,6 +53,7 @@ type(scope): description
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -61,6 +63,7 @@ type(scope): description
 - `chore`: Maintenance tasks
 
 **Examples:**
+
 - `feat: add telescope integration`
 - `fix: handle empty buffer correctly`
 - `docs: update installation instructions`
@@ -68,6 +71,7 @@ type(scope): description
 ### Testing
 
 Before submitting a PR:
+
 1. Test your changes manually in Neovim
 2. Ensure all pre-commit hooks pass
 3. Test with different plugin managers if applicable
@@ -83,6 +87,7 @@ Before submitting a PR:
 ## Beta Testing
 
 For testing new features:
+
 1. Push changes to the `beta` branch
 2. Beta releases are automatically created
 3. Users can test with `branch = "beta"` in their plugin manager
@@ -91,21 +96,25 @@ For testing new features:
 ## Types of Contributions
 
 ### Bug Reports
+
 - Use the bug report template
 - Include Neovim version, OS, and reproduction steps
 - Provide minimal configuration to reproduce the issue
 
 ### Feature Requests
+
 - Use the feature request template
 - Explain the use case and expected behavior
 - Consider if it fits the plugin's scope
 
 ### Documentation
+
 - Fix typos, improve clarity
 - Add examples and use cases
 - Keep documentation up to date with code changes
 
 ### Code Contributions
+
 - Bug fixes
 - New features (discuss in an issue first for large features)
 - Performance improvements
@@ -114,6 +123,7 @@ For testing new features:
 ## Code Review
 
 All submissions require review. We aim to:
+
 - Be constructive and helpful
 - Focus on code quality and maintainability
 - Ensure consistency with project goals
