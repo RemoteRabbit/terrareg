@@ -18,6 +18,7 @@ M.config = {
 -- @param opts table|nil User configuration options to override defaults
 -- @usage require('terrareg').setup({ option1 = false, debug = true })
 function M.setup(opts)
+  local vim = vim
   M.config = vim.tbl_deep_extend("force", M.config, opts or {})
 
   -- Initialize plugin components here

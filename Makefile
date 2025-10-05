@@ -1,24 +1,44 @@
-.PHONY: docs docs-serve docs-clean test test-unit test-integration test-watch test-install help
+.PHONY: docs docs-serve docs-dev docs-build docs-clean docs-install docs-generate test test-unit test-integration test-watch test-install help
 
-# Generate all documentation
-docs:
-	@echo "🔧 Generating documentation..."
-	@./scripts/generate_docs.sh
+# Generate documentation (VitePress)
+docs: docs-generate docs-install
+	@echo "🚀 Building documentation with VitePress..."
+	@cd docs && npm run build
+	@echo "✅ Documentation built successfully!"
+	@echo "📁 Output: docs/.vitepress/dist/"
 
-# Serve documentation locally (if you have a local server)
+# Generate API docs from source code
+docs-generate:
+	@echo "🤖 Generating API documentation from source code..."
+	@lua scripts/generate-api-docs.lua
+
+# Install documentation dependencies
+docs-install:
+	@echo "📦 Installing documentation dependencies..."
+	@cd docs && if [ ! -d node_modules ]; then npm install; fi
+
+# Serve documentation locally for development
+docs-dev: docs-generate docs-install
+	@echo "🌐 Starting development server..."
+	@echo "📖 Documentation will be available at http://localhost:5173"
+	@echo "💡 Run 'make docs-watch' in another terminal to auto-update API docs"
+	@cd docs && npm run dev
+
+# Watch Lua files and auto-regenerate API docs
+docs-watch:
+	@echo "👀 Starting file watcher for API documentation..."
+	@./scripts/watch-docs.sh
+
+# Build and serve production documentation locally
 docs-serve: docs
-	@echo "🌐 Serving documentation..."
-	@if command -v python3 >/dev/null 2>&1; then \
-		echo "Starting local server at http://localhost:8000"; \
-		cd docs/generated && python3 -m http.server 8000; \
-	else \
-		echo "❌ Python3 not found. Please install Python3 to serve docs locally."; \
-	fi
+	@echo "🌐 Serving production documentation..."
+	@echo "📖 Documentation available at http://localhost:4173"
+	@cd docs && npm run preview
 
 # Clean generated documentation
 docs-clean:
 	@echo "🧹 Cleaning documentation..."
-	@rm -rf docs/generated doc/terrareg.txt
+	@rm -rf docs/.vitepress/dist docs/.vitepress/cache docs/node_modules
 
 # Install test dependencies
 test-install:
@@ -114,16 +134,28 @@ check: lint format test
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  docs         - Generate all documentation"
-	@echo "  docs-serve   - Generate and serve documentation locally"
-	@echo "  docs-clean   - Clean generated documentation"
-	@echo "  test-install - Install test dependencies"
-	@echo "  test         - Run all tests"
-	@echo "  test-unit    - Run unit tests only"
+	@echo ""
+	@echo "📖 Documentation:"
+	@echo "  docs            - Build documentation with VitePress (auto-generates API docs)"
+	@echo "  docs-generate   - Generate API docs from source code"
+	@echo "  docs-dev        - Start development server (http://localhost:5173)"
+	@echo "  docs-watch      - Watch Lua files and auto-regenerate API docs"
+	@echo "  docs-serve      - Build and serve production docs (http://localhost:4173)"
+	@echo "  docs-install    - Install documentation dependencies"
+	@echo "  docs-clean      - Clean generated documentation"
+	@echo ""
+	@echo "🧪 Testing:"
+	@echo "  test-install    - Install test dependencies"
+	@echo "  test            - Run all tests"
+	@echo "  test-unit       - Run unit tests only"
 	@echo "  test-integration - Run integration tests with Neovim"
-	@echo "  test-coverage - Run tests with coverage report"
-	@echo "  test-watch   - Watch files and run tests on changes"
-	@echo "  lint         - Run luacheck linting"
-	@echo "  format       - Format code with stylua"
-	@echo "  check        - Run all quality checks (lint, format, test)"
-	@echo "  help         - Show this help message"
+	@echo "  test-coverage   - Run tests with coverage report"
+	@echo "  test-watch      - Watch files and run tests on changes"
+	@echo ""
+	@echo "🔧 Code Quality:"
+	@echo "  lint            - Run luacheck linting"
+	@echo "  format          - Format code with stylua"
+	@echo "  check           - Run all quality checks (lint, format, test)"
+	@echo ""
+	@echo "❓ Help:"
+	@echo "  help            - Show this help message"

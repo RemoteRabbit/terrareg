@@ -1,53 +1,106 @@
 # terrareg Documentation
 
-This directory contains the documentation for the terrareg Neovim plugin.
+Modern VitePress-powered documentation site with beautiful design, fast performance, and excellent developer experience.
+
+## Quick Start
+
+### View Online Documentation
+**🌐 [Visit the Documentation Site](https://remoterabbit.github.io/terrareg/)**
+
+### Develop Documentation Locally
+
+```bash
+# Install dependencies
+make docs-install
+
+# Start development server (hot reload)
+make docs-dev
+# Opens http://localhost:5173
+
+# Build production version
+make docs
+
+# Serve production build locally
+make docs-serve
+# Opens http://localhost:4173
+```
 
 ## Documentation Structure
 
-- `generated/` - Auto-generated API documentation from source code comments
-- Developer documentation and guides (to be added)
+```
+docs/
+├── .vitepress/          # VitePress configuration
+├── index.md            # Landing page
+├── guide/              # User guides
+│   ├── installation.md
+│   ├── quick-start.md
+│   └── configuration.md
+├── api/                # API reference
+└── examples/           # Real-world examples
+```
 
-## API Documentation
+## Contributing to Documentation
 
-The API documentation is automatically generated from the source code using [LDoc](https://stevedonovan.github.io/ldoc/).
+### Adding Content
 
-To generate documentation locally:
+1. **Guides**: Add new `.md` files in `guide/`
+2. **API Docs**: Update `api/` directory
+3. **Examples**: Add to `examples/`
+
+### Local Development
 
 ```bash
-# Install ldoc
-luarocks install ldoc
-
-# Generate docs
-ldoc -d docs/generated -t "terrareg Documentation" .
+# Start development server with hot reload
+make docs-dev
 ```
 
-## Online Documentation
+### Configuration
 
-The latest documentation is automatically deployed to GitHub Pages at:
-https://remoterabbit.github.io/terrareg/
+Edit `.vitepress/config.js` to:
+- Add new navigation items
+- Configure sidebar
+- Update site metadata
 
-## Writing Documentation
+### Writing Documentation
 
-When adding new functions or modules, please include proper documentation comments:
+Use standard Markdown with VitePress enhancements:
+
+```markdown
+::: tip Pro Tip
+This is a helpful tip!
+:::
+
+::: warning Important
+This is important information.
+:::
+
+::: danger Caution
+This requires careful attention.
+:::
+```
+
+### Code Examples
 
 ```lua
---- Brief description of the function
--- Longer description if needed
--- @tparam string param1 Description of parameter
--- @tparam number param2 Description of parameter
--- @treturn boolean Description of return value
--- @usage require('terrareg').function_name("example")
-function M.function_name(param1, param2)
-  -- implementation
-end
+-- Syntax highlighting works automatically
+require("terrareg").setup({
+  option1 = true,
+  option2 = "custom",
+})
 ```
 
-### Documentation Tags
+## Deployment
 
-- `@module` - Module name
-- `@tparam type name` - Typed parameter
-- `@treturn type` - Typed return value
-- `@usage` - Usage example
-- `@see` - Reference to other functions/modules
-- `@author` - Author information
-- `@license` - License information
+Documentation is automatically deployed via GitHub Actions:
+- **Trigger**: Push to `main` branch with changes in `docs/`
+- **Output**: https://remoterabbit.github.io/terrareg/
+- **Build**: VitePress static site generation
+
+## Features
+
+- 🚀 **Fast**: Built with Vite for lightning-fast development
+- 📱 **Responsive**: Mobile-friendly design
+- 🔍 **Searchable**: Built-in search functionality
+- 🎨 **Beautiful**: Modern, clean design
+- ⚡ **Hot Reload**: Instant updates during development
+- 📊 **Analytics Ready**: Easy to integrate with analytics
