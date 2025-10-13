@@ -7,7 +7,6 @@ local M = {}
 
 local curl = require("plenary.curl")
 local Job = require("plenary.job")
-local config = require("terrareg.config")
 local log = require("terrareg.log")
 local filesystem = require("terrareg.filesystem")
 local base_gh_url = "https://api.github.com/search/repositories?q=org:hashicorp+topic:terraform-provider&per_page=100"
@@ -114,7 +113,6 @@ local function download_versioned_docs(repo, folder_path, callback)
 			local completed_downloads = 0
 			local has_errors = false
 
-			-- Count how many downloads we'll do
 			for i, release in ipairs(releases) do
 				if i <= 3 then
 					total_downloads = total_downloads + 1
@@ -137,7 +135,6 @@ local function download_versioned_docs(repo, folder_path, callback)
 					local version = release.tag_name
 					local version_dir = DOCS_DIR:joinpath(repo_name, version):__tostring()
 
-					-- Create async job for git operations
 					local job = Job:new({
 						command = "bash",
 						args = {
@@ -174,10 +171,34 @@ local function download_versioned_docs(repo, folder_path, callback)
 						on_exit = function(j, return_val)
 							vim.schedule(function()
 								if return_val ~= 0 then
-									local error_output = table.concat(j:stderr_result(), "\n")
-									log.error(
-										"Failed to download " .. repo_name .. " " .. version .. ": " .. error_output
-									)
+									local stderr_lines = j:stderr_result()
+									local actual_errors = {}
+									for _, line in ipairs(stderr_lines) do
+										if
+											not line:match("^From https://")
+											and not line:match("^%s*%*%s+tag%s+")
+											and not line:match("^%s*%*%s+branch%s+")
+											and not line:match("^%s+%->%s+FETCH_HEAD")
+											and not line:match("^remote:")
+											and line:trim() ~= ""
+										then
+											table.insert(actual_errors, line)
+										end
+									end
+
+									if #actual_errors > 0 then
+										local error_output = table.concat(actual_errors, "\n")
+										log.error(
+											"Failed to download " .. repo_name .. " " .. version .. ": " .. error_output
+										)
+									else
+										log.debug(
+											"Git command failed with non-zero exit but no actual errors: "
+												.. repo_name
+												.. " "
+												.. version
+										)
+									end
 									has_errors = true
 								else
 									log.info("Downloaded: " .. repo_name .. " " .. version)
@@ -185,17 +206,13 @@ local function download_versioned_docs(repo, folder_path, callback)
 								check_completion()
 							end)
 						end,
-						on_stderr = function(err, data)
-							-- Collect stderr for error reporting
-						end,
+						on_stderr = function(err, data) end,
 					})
 
-					-- Start the job asynchronously
 					job:start()
 				end
 			end
 
-			-- Handle case where no releases found
 			if total_downloads == 0 then
 				if callback then
 					vim.schedule(function()
@@ -241,35 +258,51 @@ M.install_provider = function(provider, callback)
 
 	log.info("Installing provider: " .. provider)
 
-	-- Install asynchronously and update lockfile when complete
-	download_versioned_docs(provider, "website/docs", function(success)
-		if success then
-			lockfile[provider] = {
-				installed_at = os.time(),
-				versions = {},
-			}
+	local paths_to_try = {}
+	if provider == "random" then
+		table.insert(paths_to_try, "docs")
+	else
+		table.insert(paths_to_try, "website/docs")
+	end
 
-			local write_success = filesystem.write_lockfile(lockfile)
-			if write_success then
-				log.info("Provider " .. provider .. " installed successfully")
-				if callback then
-					callback(true)
-				end
-			else
-				log.error("Failed to update lockfile for provider " .. provider)
-				if callback then
-					callback(false)
-				end
-			end
-		else
+	local function try_download_path(path_index)
+		if path_index > #paths_to_try then
 			log.error("Failed to download documentation for provider " .. provider)
 			if callback then
 				callback(false)
 			end
+			return
 		end
-	end)
 
-	return true -- Return immediately, actual result comes via callback
+		local path = paths_to_try[path_index]
+		download_versioned_docs(provider, path, function(success)
+			if success then
+				lockfile[provider] = {
+					installed_at = os.time(),
+					versions = {},
+				}
+
+				local write_success = filesystem.write_lockfile(lockfile)
+				if write_success then
+					log.info("Provider " .. provider .. " installed successfully")
+					if callback then
+						callback(true)
+					end
+				else
+					log.error("Failed to update lockfile for provider " .. provider)
+					if callback then
+						callback(false)
+					end
+				end
+			else
+				try_download_path(path_index + 1)
+			end
+		end)
+	end
+
+	try_download_path(1)
+
+	return true
 end
 
 -- Download documentation for multiple repos with version history
@@ -285,7 +318,6 @@ M.ensure_installed = function(providers)
 	local lockfile = filesystem.read_lockfile() or {}
 	local providers_to_install = {}
 
-	-- Find providers that need installation
 	for _, provider in ipairs(providers) do
 		if not lockfile[provider] then
 			table.insert(providers_to_install, provider)
@@ -294,7 +326,6 @@ M.ensure_installed = function(providers)
 		end
 	end
 
-	-- Install providers asynchronously one by one to avoid overwhelming the system
 	local function install_next(index)
 		if index > #providers_to_install then
 			if #providers_to_install > 0 then
@@ -313,14 +344,12 @@ M.ensure_installed = function(providers)
 				log.error("Provider " .. provider .. " installation failed")
 			end
 
-			-- Install next provider after a small delay
 			vim.defer_fn(function()
 				install_next(index + 1)
 			end, 1000)
 		end)
 	end
 
-	-- Start installation chain
 	install_next(1)
 
 	return #providers_to_install > 0
@@ -374,7 +403,6 @@ M.update_provider = function(provider, callback)
 
 	log.info("Updating provider: " .. provider)
 
-	-- Get current releases from GitHub
 	curl.get("https://api.github.com/repos/hashicorp/terraform-provider-" .. provider .. "/releases?per_page=3", {
 		headers = {
 			["Accept"] = "application/vnd.github+json",
@@ -383,18 +411,16 @@ M.update_provider = function(provider, callback)
 		callback = function(response)
 			local releases = vim.json.decode(response.body)
 			local latest_versions = {}
-			
-			-- Get the latest 3 version tags
+
 			for i, release in ipairs(releases) do
 				if i <= 3 then
 					table.insert(latest_versions, release.tag_name)
 				end
 			end
 
-			-- Get currently installed versions
 			local provider_dir = DOCS_DIR:joinpath(provider)
 			local installed_versions = {}
-			
+
 			if provider_dir:exists() then
 				local ok, entries = pcall(function()
 					return provider_dir:fs_scandir()
@@ -408,7 +434,6 @@ M.update_provider = function(provider, callback)
 				end
 			end
 
-			-- Find versions to remove (installed but not in latest 3)
 			local versions_to_remove = {}
 			for _, installed in ipairs(installed_versions) do
 				local is_latest = false
@@ -423,7 +448,6 @@ M.update_provider = function(provider, callback)
 				end
 			end
 
-			-- Find versions to download (in latest 3 but not installed)
 			local versions_to_download = {}
 			for _, latest in ipairs(latest_versions) do
 				local is_installed = false
@@ -438,7 +462,6 @@ M.update_provider = function(provider, callback)
 				end
 			end
 
-			-- Remove old versions
 			for _, version in ipairs(versions_to_remove) do
 				local version_dir = provider_dir:joinpath(version)
 				local ok, err = pcall(function()
@@ -451,7 +474,6 @@ M.update_provider = function(provider, callback)
 				end
 			end
 
-			-- Download new versions
 			if #versions_to_download == 0 then
 				log.info("Provider " .. provider .. " is already up to date")
 				if callback then
@@ -500,15 +522,41 @@ M.update_provider = function(provider, callback)
 					on_exit = function(j, return_val)
 						vim.schedule(function()
 							if return_val ~= 0 then
-								local error_output = table.concat(j:stderr_result(), "\n")
-								log.error("Failed to download " .. provider .. " " .. version .. ": " .. error_output)
+								local stderr_lines = j:stderr_result()
+								local actual_errors = {}
+								for _, line in ipairs(stderr_lines) do
+									if
+										not line:match("^From https://")
+										and not line:match("^%s*%*%s+tag%s+")
+										and not line:match("^%s*%*%s+branch%s+")
+										and not line:match("^%s+%->%s+FETCH_HEAD")
+										and not line:match("^remote:")
+										and line:trim() ~= ""
+									then
+										table.insert(actual_errors, line)
+									end
+								end
+
+								if #actual_errors > 0 then
+									local error_output = table.concat(actual_errors, "\n")
+									log.error(
+										"Failed to download " .. provider .. " " .. version .. ": " .. error_output
+									)
+								else
+									log.debug(
+										"Git command failed with non-zero exit but no actual errors: "
+											.. provider
+											.. " "
+											.. version
+									)
+								end
 								downloads_failed = downloads_failed + 1
 							else
 								log.info("Downloaded: " .. provider .. " " .. version)
 							end
-							
+
 							downloads_completed = downloads_completed + 1
-							
+
 							if downloads_completed >= #versions_to_download then
 								if downloads_failed == 0 then
 									log.info("Provider " .. provider .. " updated successfully")
@@ -516,7 +564,13 @@ M.update_provider = function(provider, callback)
 										callback(true)
 									end
 								else
-									log.error("Provider " .. provider .. " update completed with " .. downloads_failed .. " failures")
+									log.error(
+										"Provider "
+											.. provider
+											.. " update completed with "
+											.. downloads_failed
+											.. " failures"
+									)
 									if callback then
 										callback(false)
 									end

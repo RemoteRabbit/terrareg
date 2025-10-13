@@ -22,6 +22,7 @@ local defaults = {
 		width = "120",
 		border = "rounded",
 	},
+	-- TODO: Add ability to ensure specific versions are also installed
 	ensure_installed = {},
 }
 
