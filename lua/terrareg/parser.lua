@@ -1,9 +1,9 @@
---- Documentation parser for terrareg.nvim
+-- Documentation parser for terrareg.nvim
 -- @module terrareg.parser
 
 local M = {}
 
---- Extract text content from HTML tags
+-- Extract text content from HTML tags
 -- @param html string HTML content
 -- @param pattern string Lua pattern to match
 -- @return string|nil Extracted text content
@@ -18,7 +18,7 @@ local function extract_text_from_tag(html, pattern)
   return content
 end
 
---- Extract description from Terraform documentation
+-- Extract description from Terraform documentation
 -- @param content string HTML or Markdown content
 -- @return string|nil Description text
 function M.extract_description(content)
@@ -67,7 +67,7 @@ function M.extract_description(content)
   return nil
 end
 
---- Parse argument details from description
+-- Parse argument details from description
 -- @param description string Full argument description
 -- @return table Parsed details with required, default, and clean description
 local function parse_argument_details(description)
@@ -125,7 +125,7 @@ local function parse_argument_details(description)
   return details
 end
 
---- Extract arguments/attributes from documentation
+-- Extract arguments/attributes from documentation
 -- @param content string HTML or Markdown content
 -- @return table List of arguments with enhanced details
 function M.extract_arguments(content)
@@ -201,7 +201,7 @@ function M.extract_arguments(content)
   return arguments
 end
 
---- Extract example usage from documentation
+-- Extract example usage from documentation
 -- @param content string HTML or Markdown content
 -- @return table List of code examples
 function M.extract_examples(content)

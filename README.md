@@ -126,6 +126,9 @@ require("terrareg").setup({
 
   -- Debug mode
   debug = false,
+
+  -- List of providers to use (tries in order)
+  providers = {"aws", "azure", "gcp"},
 })
 ```
 

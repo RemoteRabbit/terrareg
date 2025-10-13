@@ -1,6 +1,0 @@
-- id: generate-api-docs
-  name: Generate API documentation
-  entry: lua scripts/generate-api-docs.lua
-  language: system
-  files: '^lua/.*\.lua$'
-  pass_filenames: false
