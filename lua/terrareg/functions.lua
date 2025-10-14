@@ -1,7 +1,7 @@
--- Registry building functions for terrareg.nvim
--- Handles fetching Terraform provider information from GitHub API
--- and building the local provider registry for fast access.
--- @module terrareg.functions
+--- Registry building functions for terrareg.nvim
+--- Handles fetching Terraform provider information from GitHub API
+--- and building the local provider registry for fast access.
+--- @module terrareg.functions
 
 local M = {}
 
@@ -9,13 +9,14 @@ local curl = require("plenary.curl")
 local Job = require("plenary.job")
 local log = require("terrareg.log")
 local filesystem = require("terrareg.filesystem")
+local write_index = require("terrareg.provider_functions")
 local base_gh_url = "https://api.github.com/search/repositories?q=org:hashicorp+topic:terraform-provider&per_page=100"
 
--- Parse GitHub API Link header for pagination
--- Extracts the "next" URL from GitHub's Link header to support pagination
--- through large result sets.
--- @param link_header string The Link header from GitHub API response
--- @return string|nil The next page URL, or nil if no more pages
+--- Parse GitHub API Link header for pagination
+--- Extracts the "next" URL from GitHub's Link header to support pagination
+--- through large result sets.
+--- @param link_header string? The Link header from GitHub API response
+--- @return string? The next page URL, or nil if no more pages
 local function parse_link_header(link_header)
 	if not link_header then
 		return nil
@@ -25,17 +26,17 @@ local function parse_link_header(link_header)
 	return next_url
 end
 
--- Recursively fetch all pages from GitHub API
--- Handles GitHub API pagination by following "next" links in the Link header.
--- Accumulates all repositories across pages and calls the callback when complete.
--- @param url string The API URL to fetch (may be initial URL or next page)
--- @param all_repos table Accumulator table for all repository data
--- @param callback function Function to call with complete results
+--- Recursively fetch all pages from GitHub API
+--- Handles GitHub API pagination by following "next" links in the Link header.
+--- Accumulates all repositories across pages and calls the callback when complete.
+--- @param url string The API URL to fetch (may be initial URL or next page)
+--- @param all_repos table[] Accumulator table for all repository data
+--- @param callback fun(repos: table[]): nil Function to call with complete results
 local function fetch_all_pages(url, all_repos, callback)
 	curl.get(url, {
 		headers = {
 			["Accept"] = "application/vnd.github+json",
-			["User-agent"] = "chrome",
+			["User-agent"] = "Terrareg",
 			["X-GitHub-Api-Version"] = "2022-11-28",
 		},
 		callback = function(response)
@@ -71,11 +72,11 @@ local function fetch_all_pages(url, all_repos, callback)
 	})
 end
 
--- Build the local Terraform provider registry
--- Fetches all HashiCorp Terraform providers from GitHub API and builds
--- a local registry file for fast access. Creates the data directory if needed
--- and handles all pagination automatically.
--- @function registry_build
+--- Build the local Terraform provider registry
+--- Fetches all HashiCorp Terraform providers from GitHub API and builds
+--- a local registry file for fast access. Creates the data directory if needed
+--- and handles all pagination automatically.
+--- @return nil
 M.registry_build = function()
 	local all_repos = {}
 	fetch_all_pages(base_gh_url, all_repos, function(repos)
@@ -92,13 +93,12 @@ M.registry_build = function()
 	end)
 end
 
--- Download versioned documentation from GitHub repos
--- Fetches the last 3 releases for each repo and downloads specific folder contents
--- using git sparse-checkout to minimize storage and API calls
--- @function download_versioned_docs
--- @param repo string GitHub repo in format "owner/repo"
--- @param folder_path string Path to folder within repo (e.g., "website/docs")
--- @param callback function optional callback when all downloads complete
+--- Download versioned documentation from GitHub repos
+--- Fetches the last 3 releases for each repo and downloads specific folder contents
+--- using git sparse-checkout to minimize storage and API calls
+--- @param repo string GitHub repo name (e.g., "aws")
+--- @param folder_path string Path to folder within repo (e.g., "website/docs")
+--- @param callback fun(success: boolean, downloaded_versions: string[]): nil? Optional callback when all downloads complete
 local function download_versioned_docs(repo, folder_path, callback)
 	local repo_name = repo:match("([^/]+)$")
 
@@ -112,6 +112,7 @@ local function download_versioned_docs(repo, folder_path, callback)
 			local total_downloads = 0
 			local completed_downloads = 0
 			local has_errors = false
+			local downloaded_versions = {}
 
 			for i, release in ipairs(releases) do
 				if i <= 3 then
@@ -124,7 +125,7 @@ local function download_versioned_docs(repo, folder_path, callback)
 				if completed_downloads >= total_downloads then
 					if callback then
 						vim.schedule(function()
-							callback(not has_errors)
+							callback(not has_errors, downloaded_versions)
 						end)
 					end
 				end
@@ -202,6 +203,7 @@ local function download_versioned_docs(repo, folder_path, callback)
 									has_errors = true
 								else
 									log.info("Downloaded: " .. repo_name .. " " .. version)
+									table.insert(downloaded_versions, version)
 								end
 								check_completion()
 							end)
@@ -216,7 +218,7 @@ local function download_versioned_docs(repo, folder_path, callback)
 			if total_downloads == 0 then
 				if callback then
 					vim.schedule(function()
-						callback(false)
+						callback(false, {})
 					end)
 				end
 			end
@@ -225,17 +227,18 @@ local function download_versioned_docs(repo, folder_path, callback)
 			log.error("Error fetching releases for " .. repo .. ": " .. error.status)
 			if callback then
 				vim.schedule(function()
-					callback(false)
+					callback(false, {})
 				end)
 			end
 		end,
 	})
 end
 
--- Install provider
--- @function install_provider
--- @param provider string name of provider
--- @param callback function optional callback when installation completes
+--- Install a Terraform provider and its documentation
+--- Downloads provider documentation from GitHub and updates the lockfile
+--- @param provider string Name of the provider to install (e.g., "aws")
+--- @param callback fun(success: boolean): nil? Optional callback when installation completes
+--- @return boolean True if installation initiated successfully
 M.install_provider = function(provider, callback)
 	local registry = filesystem.read_registery()
 	if not registry then
@@ -258,11 +261,14 @@ M.install_provider = function(provider, callback)
 
 	log.info("Installing provider: " .. provider)
 
+	local edge_case_providers = { "random", "kubernetes" } -- aka ecp
 	local paths_to_try = {}
-	if provider == "random" then
-		table.insert(paths_to_try, "docs")
-	else
-		table.insert(paths_to_try, "website/docs")
+	for _, ecp in ipairs(edge_case_providers) do
+		if provider == ecp then
+			table.insert(paths_to_try, "docs")
+		else
+			table.insert(paths_to_try, "website/docs")
+		end
 	end
 
 	local function try_download_path(path_index)
@@ -275,16 +281,17 @@ M.install_provider = function(provider, callback)
 		end
 
 		local path = paths_to_try[path_index]
-		download_versioned_docs(provider, path, function(success)
+		download_versioned_docs(provider, path, function(success, downloaded_versions)
 			if success then
 				lockfile[provider] = {
 					installed_at = os.time(),
-					versions = {},
+					versions = downloaded_versions or {},
 				}
 
 				local write_success = filesystem.write_lockfile(lockfile)
 				if write_success then
 					log.info("Provider " .. provider .. " installed successfully")
+					write_index.write_index(provider)
 					if callback then
 						callback(true)
 					end
@@ -305,16 +312,11 @@ M.install_provider = function(provider, callback)
 	return true
 end
 
--- Download documentation for multiple repos with version history
--- Example usage for downloading last 3 versions of docs from terraform providers
--- @function ensure_installed
+--- Ensure multiple providers are installed
+--- Downloads documentation for providers that are not already installed
+--- @param providers string[] List of provider names to ensure are installed
+--- @return boolean True if any providers need installation
 M.ensure_installed = function(providers)
-	local registry = filesystem.read_registery()
-	if not registry then
-		log.error("Registry index not found. Run :TerraregBuildReg")
-		return false
-	end
-
 	local lockfile = filesystem.read_lockfile() or {}
 	local providers_to_install = {}
 
@@ -324,6 +326,20 @@ M.ensure_installed = function(providers)
 		else
 			log.debug("Provider " .. provider .. " already ensured")
 		end
+	end
+
+	if #providers_to_install == 0 then
+		log.debug("All " .. #providers .. " providers already installed, no API calls needed")
+		return true
+	end
+
+	local registry = filesystem.read_registery()
+	if not registry then
+		log.error(
+			"Registry index not found. Run :TerraregBuildReg to install missing providers: "
+				.. table.concat(providers_to_install, ", ")
+		)
+		return false
 	end
 
 	local function install_next(index)
@@ -355,9 +371,10 @@ M.ensure_installed = function(providers)
 	return #providers_to_install > 0
 end
 
--- Remove provider and clean up documentation
--- @function remove_provider
--- @param provider string name of provider to remove
+--- Remove a provider and clean up documentation
+--- Deletes provider documentation from filesystem and updates lockfile
+--- @param provider string Name of provider to remove
+--- @return boolean True if removal was successful
 M.remove_provider = function(provider)
 	local lockfile = filesystem.read_lockfile() or {}
 
@@ -386,10 +403,11 @@ M.remove_provider = function(provider)
 	end
 end
 
--- Update provider to latest versions (keep only last 3)
--- @function update_provider
--- @param provider string name of provider to update
--- @param callback function optional callback when update completes
+--- Update provider to latest versions (keep only last 3)
+--- Fetches latest releases from GitHub and updates local documentation
+--- @param provider string Name of provider to update
+--- @param callback fun(success: boolean): nil? Optional callback when update completes
+--- @return boolean True if update was initiated successfully
 M.update_provider = function(provider, callback)
 	local lockfile = filesystem.read_lockfile() or {}
 
@@ -406,7 +424,7 @@ M.update_provider = function(provider, callback)
 	curl.get("https://api.github.com/repos/hashicorp/terraform-provider-" .. provider .. "/releases?per_page=3", {
 		headers = {
 			["Accept"] = "application/vnd.github+json",
-			["User-Agent"] = "nvim-plugin",
+			["User-Agent"] = "TerraregPlugin",
 		},
 		callback = function(response)
 			local releases = vim.json.decode(response.body)
@@ -558,8 +576,15 @@ M.update_provider = function(provider, callback)
 							downloads_completed = downloads_completed + 1
 
 							if downloads_completed >= #versions_to_download then
+								local updated_lockfile = filesystem.read_lockfile() or {}
+								if updated_lockfile[provider] then
+									updated_lockfile[provider].versions = latest_versions
+									filesystem.write_lockfile(updated_lockfile)
+								end
+
 								if downloads_failed == 0 then
 									log.info("Provider " .. provider .. " updated successfully")
+									write_index.write_index(provider)
 									if callback then
 										callback(true)
 									end
@@ -592,6 +617,56 @@ M.update_provider = function(provider, callback)
 			end
 		end,
 	})
+
+	return true
+end
+
+--- Update all installed providers
+--- Updates all providers in the lockfile to their latest versions
+--- @param callback fun(success: boolean): nil? Optional callback when all updates complete
+--- @return boolean True if updates were initiated successfully
+M.update_all_providers = function(callback)
+	local lockfile = filesystem.read_lockfile()
+	if not lockfile or next(lockfile) == nil then
+		log.info("No providers installed to update")
+		if callback then
+			callback(true)
+		end
+		return true
+	end
+
+	local providers = {}
+	for provider, _ in pairs(lockfile) do
+		table.insert(providers, provider)
+	end
+
+	log.info("Updating " .. #providers .. " installed providers")
+
+	local completed = 0
+	local failed = 0
+
+	local function check_completion()
+		completed = completed + 1
+		if completed >= #providers then
+			if failed == 0 then
+				log.info("All " .. #providers .. " providers updated successfully")
+			else
+				log.info("Updated " .. (completed - failed) .. " providers, " .. failed .. " failed")
+			end
+			if callback then
+				callback(failed == 0)
+			end
+		end
+	end
+
+	for _, provider in ipairs(providers) do
+		M.update_provider(provider, function(success)
+			if not success then
+				failed = failed + 1
+			end
+			check_completion()
+		end)
+	end
 
 	return true
 end

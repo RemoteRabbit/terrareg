@@ -1,12 +1,13 @@
--- Documentation parser for terrareg.nvim
--- @module terrareg.parser
+--- Documentation parser for terrareg.nvim
+--- Handles parsing of Terraform provider documentation from HTML and Markdown
+--- @module terrareg.parser
 
 local M = {}
 
--- Extract text content from HTML tags
--- @param html string HTML content
--- @param pattern string Lua pattern to match
--- @return string|nil Extracted text content
+--- Extract text content from HTML tags
+--- @param html string HTML content
+--- @param pattern string Lua pattern to match
+--- @return string? Extracted text content
 local function extract_text_from_tag(html, pattern)
   local content = html:match(pattern)
   if content then
@@ -18,9 +19,10 @@ local function extract_text_from_tag(html, pattern)
   return content
 end
 
--- Extract description from Terraform documentation
--- @param content string HTML or Markdown content
--- @return string|nil Description text
+--- Extract description from Terraform documentation
+--- Parses both HTML and Markdown formats to find resource/data source descriptions
+--- @param content string HTML or Markdown content
+--- @return string? Description text
 function M.extract_description(content)
   -- If content is markdown, extract description differently
   if content:match("^%s*%-%-%-") or content:match("# ") then
@@ -67,9 +69,10 @@ function M.extract_description(content)
   return nil
 end
 
--- Parse argument details from description
--- @param description string Full argument description
--- @return table Parsed details with required, default, and clean description
+--- Parse argument details from description
+--- Extracts metadata like required status, default values, and forces_new from description text
+--- @param description string Full argument description
+--- @return table Parsed details with required, default, and clean description
 local function parse_argument_details(description)
   local details = {
     required = "Unknown",
@@ -125,9 +128,10 @@ local function parse_argument_details(description)
   return details
 end
 
--- Extract arguments/attributes from documentation
--- @param content string HTML or Markdown content
--- @return table List of arguments with enhanced details
+--- Extract arguments/attributes from documentation
+--- Parses documentation to extract argument definitions with metadata
+--- @param content string HTML or Markdown content
+--- @return table[] List of arguments with enhanced details
 function M.extract_arguments(content)
   local arguments = {}
 
@@ -201,9 +205,10 @@ function M.extract_arguments(content)
   return arguments
 end
 
--- Extract example usage from documentation
--- @param content string HTML or Markdown content
--- @return table List of code examples
+--- Extract example usage from documentation
+--- Finds and extracts Terraform code examples from documentation
+--- @param content string HTML or Markdown content
+--- @return string[] List of code examples
 function M.extract_examples(content)
   local examples = {}
 

@@ -1,178 +1,176 @@
 # terrareg.nvim
 
-An extensible Neovim plugin for browsing and inserting Terraform provider documentation (AWS, Azure, GCP, and more) with Telescope integration.
+A Neovim plugin for managing Terraform provider documentation locally. Download, index, and browse official Terraform provider docs with powerful picker integration.
 
 ## Table of Contents
 
 - [Features](#features)
+- [Requirements](#requirements)
 - [Installation](#installation)
-- [Configuration](#configuration)
+- [Setup](#setup)
 - [Usage](#usage)
+- [Commands](#commands)
 - [API](#api)
-- [Supported Resources](#supported-resources)
-- [Extending & Contributing](#extending--contributing)
-- [Getting Help](#getting-help)
+- [Contributing](#contributing)
 - [License](#license)
+
 ## Features
 
-- 🔍 **Telescope Integration**: Browse Terraform resources and data sources with fuzzy search
-- 📖 **Rich Documentation Display**: View formatted documentation in floating windows
-- 💡 **Example Code Insertion**: Insert Terraform examples directly into your buffer
-- 🚀 **Fast Access**: Quickly find and reference resources while coding
-- 📊 **Comprehensive Coverage**: Includes common AWS, Azure, GCP, and other resources
-- 🌐 **Multiple Sources**: Fetches from Terraform Registry with GitHub fallback
-- 🧩 **Extensible Providers**: Easily add support for new cloud providers
+- 📦 **Local Documentation**: Download and manage Terraform provider docs locally
+- 🔍 **Powerful Pickers**: Browse providers and docs with Snacks.nvim integration
+- 🚀 **Fast Access**: Instantly search through indexed documentation
+- 📊 **Version Management**: Keep track of multiple provider versions (last 3)
+- 🔄 **Auto-updates**: Automatically update to latest provider versions
+- 🌐 **Official Sources**: Downloads directly from HashiCorp's GitHub repositories
+- 💾 **Persistent Storage**: Local caching for offline access
+
+## Requirements
+
+- Neovim 0.8+
+- [plenary.nvim](https://github.com/nvim-lua/plenary.nvim) (required dependency)
+- [Snacks.nvim](https://github.com/folke/snacks.nvim) (optional, for picker integration)
+- `git` (for downloading provider documentation)
+- `curl` (for API requests)
 
 ## Installation
 
-### Requirements
-
-- [telescope.nvim](https://github.com/nvim-telescope/telescope.nvim)
-- `curl` (for HTTP requests)
-- Neovim 0.8+
-
-### Stable Release
-
-#### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
+### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
 
 ```lua
 {
-  "remoterabbit/terrareg",
+  "RemoteRabbit/terrareg",
   dependencies = {
-    "nvim-telescope/telescope.nvim",
+    "nvim-lua/plenary.nvim", -- Required
+    "folke/snacks.nvim",     -- Optional (for pickers)
   },
   config = function()
     require("terrareg").setup({
-      -- your configuration here
+      -- your configuration here (see Setup section)
     })
   end,
 }
 ```
 
-#### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
 
 ```lua
 use {
-  "remoterabbit/terrareg",
+  "RemoteRabbit/terrareg",
   requires = {
-    "nvim-telescope/telescope.nvim",
+    "nvim-lua/plenary.nvim", -- Required
+    "folke/snacks.nvim",     -- Optional (for pickers)
   },
   config = function()
     require("terrareg").setup({
-      -- your configuration here
+      -- your configuration here (see Setup section)
     })
   end
 }
 ```
 
-### Beta Testing
+### Using [vim-plug](https://github.com/junegunn/vim-plug)
 
-To help test new features before they're released:
+```vim
+Plug 'nvim-lua/plenary.nvim'  " Required
+Plug 'folke/snacks.nvim'      " Optional (for pickers)
+Plug 'RemoteRabbit/terrareg'
 
-#### Using [lazy.nvim](https://github.com/folke/lazy.nvim)
-
-```lua
-{
-  "remoterabbit/terrareg",
-  branch = "beta", -- Use beta branch for testing
-  dependencies = {
-    "nvim-telescope/telescope.nvim",
-  },
-  config = function()
-    require("terrareg").setup({
-      -- your configuration here
-    })
-  end,
-}
+" In your init.lua or init.vim:
+lua require('terrareg').setup({})
 ```
 
-#### Using [packer.nvim](https://github.com/wbthomason/packer.nvim)
+## Setup
 
-```lua
-use {
-  "remoterabbit/terrareg",
-  branch = "beta", -- Use beta branch for testing
-  requires = {
-    "nvim-telescope/telescope.nvim",
-  },
-  config = function()
-    require("terrareg").setup({
-      -- your configuration here
-    })
-  end
-}
-```
-
-⚠️ **Beta versions may contain bugs and breaking changes. Use at your own risk.**
-
-## Configuration
-
-The plugin comes with the following default configuration (see [docs/guide/configuration.md](docs/guide/configuration.md) for all options):
+Call `setup()` to configure the plugin. Here are the available options:
 
 ```lua
 require("terrareg").setup({
-  -- Display options
-  display_mode = "float", -- "float", "popup", or "split"
-
-  -- Window options
-  window = {
-    width = 80,
-    height = 30,
+  -- Directory path for storing terrareg data (default: vim.fn.stdpath("data") .. "/terrareg")
+  dir_path = vim.fn.stdpath("data") .. "/terrareg",
+  
+  -- How to open documentation windows (default: "float")
+  open_mode = "float", -- "split", "float", etc.
+  
+  -- Floating window configuration (when open_mode = "float")
+  float_win = {
+    relative = "editor",
+    height = "30",
+    width = "120",
     border = "rounded",
   },
-
-  -- HTTP options
-  timeout = 30000, -- 30 seconds
-
-  -- Debug mode
-  debug = false,
-
-  -- List of providers to use (tries in order)
-  providers = {"aws", "azure", "gcp"},
+  
+  -- List of providers to ensure are installed on startup (default: {})
+  ensure_installed = { "aws", "kubernetes", "helm" },
+  
+  -- Picker configuration (requires Snacks.nvim)
+  pickers = {
+    enabled = true, -- Enable picker functionality
+    docs_open_cmd = "float", -- How to open docs: "float", "edit", "vsplit", "split", "tabnew"
+    keep_float_buffers = false, -- Keep floating window buffers after closing
+  },
 })
 ```
 
+### First Time Setup
+
+1. **Build the provider registry** (required first step):
+
+   ```vim
+   :TerraregBuildReg
+   ```
+
+2. **Install providers** you want to use:
+
+   ```vim
+   :TerraregInstall aws
+   :TerraregInstall kubernetes
+   :TerraregInstall helm
+   ```
+
+3. **Browse available providers** with picker (if Snacks.nvim is installed):
+
+   ```vim
+   :TerraregPickerAvailable
+   ```
+
 ## Usage
 
-### Commands ([Full usage guide](docs/guide/quick-start.md))
+The plugin provides both command-line and programmatic interfaces for managing Terraform provider documentation.
+
+### Basic Workflow
+
+1. **Build the provider registry**: `TerraregBuildReg`
+2. **Install providers**: `TerraregInstall <provider>`  
+3. **Browse with pickers**: `TerraregPickerInstalled` or `TerraregPickerAvailable`
+4. **Update providers**: `TerraregUpdate [provider]`
+
+## Commands
 
 | Command | Description |
 |---------|-------------|
-| `:TerraregResources [query]` | Open picker for all AWS resources and data sources |
-| `:TerraregResourcesOnly [query]` | Open picker for AWS resources only |
-| `:TerraregDataSources [query]` | Open picker for AWS data sources only |
-| `:TerraregSearch [query]` | Search AWS resources (prompts if no query provided) |
-| `:TerraregDocs <type> <name>` | Show documentation for specific resource |
-| `:TerraregInsert <type> <name>` | Insert example code at cursor |
-
-### Telescope Extension
-
-After installation, you can also use the Telescope extension:
-
-```
-:Telescope terrareg aws_resources
-:Telescope terrareg resources
-:Telescope terrareg data_sources
-```
-
-### Key Mappings in Documentation Window
-
-- `q` or `<Esc>` - Close documentation window
-- `o` - Open documentation URL in browser
+| `:TerraregBuildReg` | Build the local provider registry from GitHub API |
+| `:TerraregInstall <provider>` | Install a specific provider (e.g., `aws`, `kubernetes`) |
+| `:TerraregUpdate [provider]` | Update provider(s) to latest versions. No args = update all |
+| `:TerraregRemove <provider>` | Remove a provider and its documentation |
+| `:TerraregPickerInstalled` | Open picker for installed providers (requires Snacks.nvim) |
+| `:TerraregPickerAvailable` | Open picker for available providers (requires Snacks.nvim) |
+| `:TerraregPickerDocs` | Open picker for provider documentation (requires Snacks.nvim) |
+| `:TerraregPickerDocBuffers` | Open picker for documentation buffers (requires Snacks.nvim) |
 
 ### Examples
 
 ```lua
-require('terrareg').aws_resources()
+-- Setup the plugin
+require("terrareg").setup({
+  ensure_installed = { "aws", "kubernetes" },
+})
 
-require('terrareg').search('s3')
-
-require('terrareg').show_docs('resource', 'aws_s3_bucket')
-
-require('terrareg').insert_example('resource', 'aws_instance')
+-- Programmatic access to pickers (if available)
+require('terrareg').pick_installed_providers()
+require('terrareg').pick_available_providers()
+require('terrareg').pick_provider_docs()
+require('terrareg').pick_doc_buffers()
 ```
-
-See [API documentation](docs/api/index.md) for all available functions.
 
 ## API
 
@@ -181,99 +179,60 @@ See [API documentation](docs/api/index.md) for all available functions.
 ```lua
 local terrareg = require('terrareg')
 
--- Setup the plugin
-terrareg.setup(opts)
+-- Setup the plugin (required)
+terrareg.setup({
+  ensure_installed = { "aws", "kubernetes" },
+  pickers = { enabled = true }
+})
 
--- Open AWS resources picker
-terrareg.aws_resources(opts)
-
--- Open resources only picker
-terrareg.aws_resources_only(opts)
-
--- Open data sources picker
-terrareg.aws_data_sources(opts)
-
--- Search resources
-terrareg.search(query, opts)
-
--- Show documentation
-terrareg.show_docs(resource_type, resource_name)
-
--- Get documentation data
-terrareg.get_docs(resource_type, resource_name, callback)
-
--- Insert example code
-terrareg.insert_example(resource_type, resource_name)
+-- Picker functions (requires Snacks.nvim)
+terrareg.pick_installed_providers(opts)
+terrareg.pick_available_providers(opts)
+terrareg.pick_provider_docs(opts)
+terrareg.pick_doc_buffers(opts)
 ```
 
-### Resource Types
+### Data Storage
 
-- `"resource"` - Terraform resources (e.g., `aws_s3_bucket`)
-- `"data"` - Terraform data sources (e.g., `aws_ami`)
-
-## Supported Resources
-
-The plugin includes documentation for common AWS, Azure, GCP, and other resources including:
-
-- **Compute**: EC2 instances, Auto Scaling Groups, Launch Templates
-- **Storage**: S3 buckets, EBS volumes
-- **Database**: RDS instances, DynamoDB tables
-- **Networking**: VPCs, subnets, security groups, load balancers
-- **IAM**: Roles, policies, users, groups
-- **Lambda**: Functions, permissions, aliases
-- **CloudWatch**: Log groups, metric alarms
-
-## Enhanced Table Format
-
-The plugin displays arguments in a comprehensive 4-column table:
+The plugin stores all data in `vim.fn.stdpath("data") .. "/terrareg/"`:
 
 ```
-┌──────────────────────────────┬──────────────┬──────────────────┬────────────────────────────────────────────────────────────┐
-│ Argument Name                │ Required     │ Default          │ Description                                                │
-├──────────────────────────────┼──────────────┼──────────────────┼────────────────────────────────────────────────────────────┤
-│ bucket (!)                   │   Opt        │                  │ Name of the bucket. If omitted, Terraform will assign a   │
-│                              │              │                  │ random, unique name.                                      │
-│ force_destroy                │   Opt        │ false            │ Boolean that indicates all objects should be deleted from │
-│                              │              │                  │ the bucket when the bucket is destroyed.                  │
-│ vpc_id                       │ * Req        │                  │ VPC ID where the bucket will be created.                  │
-│ tags                         │   Opt        │ {}               │ Map of tags to assign to the bucket resource.             │
-└──────────────────────────────┴──────────────┴──────────────────┴────────────────────────────────────────────────────────────┘
-
-Legend: * Req = Required, Opt = Optional, (!) = Forces new resource
+~/.local/share/nvim/terrareg/
+├── docs/                    # Downloaded provider documentation
+│   ├── aws/
+│   │   ├── v6.16.0/        # Provider version directories
+│   │   ├── v6.15.0/
+│   │   ├── v6.14.1/
+│   │   └── index.json      # Generated resource index
+│   └── kubernetes/
+├── registry.json           # Provider registry cache
+└── lock.json              # Installed provider tracking
 ```
-
-### Features:
-- **Smart Parsing**: Automatically extracts required/optional status and default values
-- **Visual Indicators**: Clear symbols (* for required, (!) for forces new resource)
-- **Force New Warning**: (!) symbol indicates arguments that force resource recreation
-- **Default Values**: Shows default values when specified in documentation
-- **Text Wrapping**: Long descriptions wrap properly within table cells
-- **Unicode-Safe**: Compatible formatting that works across different terminal types
 
 ## Contributing
 
+Contributions are welcome! Here's how you can help:
 
-### Extending Providers
+### Development Setup
 
-To add support for a new cloud provider:
-1. Create a new Lua module in `lua/terrareg/providers/` (see [docs/guide/advanced.md](docs/guide/advanced.md)).
-2. Implement required functions (`list_resources`, `get_docs`, etc.).
-3. Add tests in `tests/test_providers.lua`.
-4. Update documentation in `docs/api/index.md` and `docs/guide/advanced.md`.
-5. Submit a pull request.
-
-### Contributor Guide
-1. Install [pre-commit](https://pre-commit.com/)
-2. Run `pre-commit install` to set up the git hook scripts
+1. Fork and clone the repository
+2. Install development dependencies:
+   - [plenary.nvim](https://github.com/nvim-lua/plenary.nvim)
+   - [Snacks.nvim](https://github.com/folke/snacks.nvim) (optional)
 3. Make your changes
-4. Submit a pull request
+4. Test your changes thoroughly
+5. Submit a pull request
 
-## Getting Help
+### Areas for Contribution
 
-- [FAQ](docs/guide/faq.md)
-- [Configuration Guide](docs/guide/configuration.md)
-- [API Reference](docs/api/index.md)
-- [Open an Issue](https://github.com/RemoteRabbit/terrareg/issues)
+- **Bug fixes** and performance improvements
+- **Documentation** improvements and examples  
+- **New features** like additional picker integrations
+- **Testing** and quality assurance
+- **Provider-specific enhancements**
+
+Please open an issue first to discuss major changes.
+
 ## License
 
 This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
